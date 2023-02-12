@@ -221,7 +221,7 @@ def build_text_encoder(config, vision_width, load_text_params=False, use_mlm_los
 
         text_encoder = BertForMaskedLM(config=config_text)
 
-        print("### Initializing text encoder from ", os.path.join(config['text_encoder'], 'pytorch_model.bin'))
+        print("### Initializing text encoder from ", os.path.join(config['text_encoder'], 'pytorch_model.bin')) 
         state_dict = torch.load(os.path.join(config['text_encoder'], 'pytorch_model.bin'))
 
         if 'xlm-roberta-large' in config['text_encoder']:  # i need it to encode both image-caption pairs and parallel text pairs
@@ -233,8 +233,6 @@ def build_text_encoder(config, vision_width, load_text_params=False, use_mlm_los
             load_params_choose_layers('bert.encoder.layer', state_dict, mapper)
             load_roberta_lm_head(state_dict)
 
-        else:
-            raise NotImplementedError
         msg = text_encoder.load_state_dict(state_dict, strict=False)
         print("missing_keys: ", msg.missing_keys, flush=True)
         print("unexpected_keys: ", msg.unexpected_keys, flush=True)
@@ -242,9 +240,6 @@ def build_text_encoder(config, vision_width, load_text_params=False, use_mlm_los
 
     else:  # for fine-tuning, not load_text_params by default
         assert load_text_params is False
-        # if config['use_roberta']:
-        #     text_encoder = RobertaModel(config=config_text, add_pooling_layer=False)
-        # else:
         text_encoder = BertModel(config=config_text, add_pooling_layer=False)
 
     return text_encoder, init_params

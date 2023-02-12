@@ -7,7 +7,7 @@ vqa_root: 'images/vqa-uit/train-images'
 test_root: 'images/vqa-uit/public-test-images'
 
 ## Vision Encoder
-vision_config: 'configs/config_swinB_224.json'
+vision_config: 'configs/my_config_swinB_224.json'
 
 use_clip_vit: False
 # image_res: 384
@@ -18,11 +18,12 @@ image_res: 224
 patch_size: 32
 
 ## Text Encoder (& Cross Encoder)
-text_encoder: 'data/bert-base-multilingual-uncased'
+text_encoder: 'data/distilbert-base-25lang-cased'
 text_num_hidden_layers: 4
 use_roberta: False
 
 ## Training
+text_decoder: 'data/bert-base-25lang-cased'
 num_dec_layers: 2
 batch_size_train: 8
 batch_size_test: 8

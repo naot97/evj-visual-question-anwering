@@ -44,6 +44,8 @@ images_mono: {image_key: "binary",
 train_file_text: [
     "hdfs://path/to/wikimatrix",
 ]  # multilingual parallel texts
+
+
 texts_para: {source_key: "source_text",
          target_key: "target_text",
          tokenized: False,  # whether texts have been tokenized

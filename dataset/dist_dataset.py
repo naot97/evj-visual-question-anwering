@@ -16,14 +16,19 @@ from torch.utils.data import IterableDataset
 from utils.hdfs_io import hopen, hlist_files
 
 
+my_data = {
+    'en': 'pre_train/annotations/captions_train2017.json',
+    'vi': 'pre_train/UIT-ViIC/uitviic_captions_train2017.json',
+    'ja': 'pre_train/STAIR-captions/stair_captions_v1.2_train.json'
+}
+
+
 class DistLineReadingDataset(IterableDataset):  # pylint: disable=W0223
     """
     iterate a set of folders.
     """
     def __init__(self,
                  data_path: str,
-                 rank: int = 0,
-                 world_size: int = 1,
                  shuffle: bool = False,
                  repeat: bool = False):
         super().__init__()
@@ -33,13 +38,9 @@ class DistLineReadingDataset(IterableDataset):  # pylint: disable=W0223
 
         self.files = hlist_files(data_path.split(','))
         self.files = [f for f in self.files if f.find('_SUCCESS') < 0]
-        self.is_hdfs = data_path.startswith('hdfs')
 
         self.repeat = repeat
         print('[DATA]--all dataset containing {} files.'.format(len(self.files)))
-        if len(self.files) % self.world_size != 0:
-            print('[DATA]--Whole dataset file num %s cannot split to worldsize %s ' %
-                     (len(self.files), self.world_size))
         sys.stdout.flush()
 
     def generate(self):
@@ -69,11 +70,6 @@ class DistLineReadingDataset(IterableDataset):  # pylint: disable=W0223
             if self.shuffle:
                 random.shuffle(cur_worker_files)
             for filepath in cur_worker_files:
-                if self.is_hdfs:
-                    with hopen(filepath, 'r') as reader:
-                        for line in reader:
-                            yield line.decode()
-                    continue
                 with open(filepath, 'r') as reader:
                     for line in reader:
                         yield line

@@ -5,3 +5,7 @@ python3 run.py --checkpoint output/vqa2/model_state_epoch_29.th --evaluate --tas
 python3 run.py --checkpoint output/vqa/model_state_epoch_29.th --evaluate --task gqa --output_dir output/test --bs 4 --seed 42
 
 python3 run.py --task gqa --output_dir output/test --bs 1 --seed 42
+
+
+python3 run.py --task pretrain_cclm_3m --output_dir output/pretrain 
+

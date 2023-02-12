@@ -1,0 +1,49 @@
+accelerator: {CLIP_GRAD_NORM: 1.0, FP16_LOSS_SCALE: dynamic, FP16_OPT_LEVEL: O1, GRAD_ACCUMULATE_STEPS: 1,
+  RNG_SEED: 42, SYNCBN: false}
+calc_image_bbox_loss: false
+ckpt_frequent: 5
+ckpt_frequent_step: 50000
+embed_dim: 256
+image_res: 224
+images:
+  batch_size: 8
+  caption_key: caption
+  image_key: binary
+  is_image_rpath: false
+  iter_perc: 1.0
+  language_chosen: [en, vi, ja]
+  num_workers: 4
+  tokenized: false
+images_mono: {batch_size: 128, caption_key: desc, image_key: binary, is_image_rpath: false,
+  iter_perc: 1.0, num_workers: 4, tokenized: false}
+mask_prob: 0.4
+mask_whole_word: false
+max_masks: 12
+max_tokens: 40
+max_words: 40
+optimizer: {lr: 0.0001, lr_mult: 2, opt: adamW, weight_decay: 0.01}
+patch_size: 32
+regions: {batch_size: 128, caption_key: caption, careful_hflip: true, code_switch: false,
+  image_key: binary, is_image_rpath: false, iter_perc: -1, max_images: 48, max_regions: 5,
+  min_perc_in_image: 0.5, num_workers: 2, tokenized: false}
+sample_2_captions: false
+schedular: {epochs: 30, lr: 0.0001, num_warmup_steps: 2500, sched: linear}
+skipgram_prb: 0.2
+skipgram_size: 3
+temp: 0.07
+text_encoder: data/distilbert-base-25lang-cased
+text_num_hidden_layers: 4
+texts_para: {batch_size: 128, iter_perc: 1.0, mask_prob: 0.4, max_masks: 20, max_tokens: 64,
+  max_words: 64, num_workers: 4, source_key: source_text, target_key: target_text,
+  tokenized: false}
+train_dataset_size: 2838361
+train_file: [pre_train/UIT-ViIC/uitviic_captions_train2017.json]
+train_file_mono: []
+train_file_regions: []
+train_file_text: []
+use_clip_vit: false
+use_one_cl_proj_only: false
+use_roberta: false
+use_swin: true
+use_tlm: false
+vision_config: configs/my_config_swinB_224.json

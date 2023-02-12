@@ -12,7 +12,7 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 
-from models.model_vqa import VQAModel
+from models.my_model_vqa import VQAModel
 
 import utils
 from utils.checkpointer import Checkpointer
@@ -30,7 +30,7 @@ def build_tokenizer(text_encoder: str):
     tokenizer.add_special_tokens({'bos_token': tokenizer.cls_token, 'eos_token': tokenizer.sep_token})
     return tokenizer
 
-def train(model, data_loader, optimizer, tokenizer, epoch, device, scheduler, config):
+def train(model, data_loader, optimizer, encoder_tokenizer,decoder_tokenizer, epoch, device, scheduler, config):
     header = 'Train Epoch: [{}]'.format(epoch)
     model.train()
     
@@ -42,8 +42,8 @@ def train(model, data_loader, optimizer, tokenizer, epoch, device, scheduler, co
 
     for i, (image, question, answer, weights, n) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
         image = image.to(device, non_blocking=True)
-        question_input = tokenizer(question, padding='longest', truncation=True, max_length=config['max_tokens'], return_tensors="pt").to(device)
-        answer_input = tokenizer(answer, padding='longest', return_tensors="pt").to(device) 
+        question_input = encoder_tokenizer(question, padding='longest', truncation=True, max_length=config['max_tokens'], return_tensors="pt").to(device)
+        answer_input = decoder_tokenizer(answer, padding='longest', return_tensors="pt").to(device) 
         loss = model(image, question_input, answer_input, train=True, k=n, weights=weights)
         
         optimizer.zero_grad()
@@ -135,8 +135,9 @@ def main(args, config):
     max_epoch = config['schedular']['epochs']
 
     print("Creating vqa datasets")
-    tokenizer = build_tokenizer(config['text_encoder'])
-    train_dataset, valid_dataset, test_dataset = create_dataset('uit', config, tokenizer)
+    decoder_tokenizer = build_tokenizer(config['text_decoder'])
+    encoder_tokenizer = build_tokenizer(config['text_encoder'])
+    train_dataset, valid_dataset, test_dataset = create_dataset('uit', config, decoder_tokenizer)
     datasets = [train_dataset, valid_dataset]
 
     train_dataset_size = len(train_dataset)
@@ -154,7 +155,7 @@ def main(args, config):
     print("Creating model")
     print("### pad_token_id, ", train_dataset.pad_token_id)
     print("### eos_token, ", train_dataset.eos_token)
-    model = VQAModel(config=config, tokenizer = tokenizer)
+    model = VQAModel(config=config, tokenizer = decoder_tokenizer)
     if args.load_vqa_pretrain:
         model.load_pretrained(args.checkpoint, config)
     print(device)
@@ -186,10 +187,10 @@ def main(args, config):
         print("STARTING...")
         for epoch in range(start_epoch, max_epoch):
             print(epoch)
-            train_stats = train(model, train_loader, optimizer, tokenizer, epoch, device, lr_scheduler, config)
+            train_stats = train(model, train_loader, optimizer, encoder_tokenizer, decoder_tokenizer, epoch, device, lr_scheduler, config)
 
             if epoch >= config['start_eval']:
-                vqa_result = evaluation(model, valid_loader, tokenizer, device, config)
+                vqa_result = evaluation(model, valid_loader, encoder_tokenizer, device, config)
                 result = vqa_result
 
                 print("Evaluating on valid set", flush=True)

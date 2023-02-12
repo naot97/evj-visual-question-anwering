@@ -4,9 +4,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from models.my_xbert import DistilBertConfig, DistilBertForMaskedLM
+from models.my_xvlm import XVLMBase, load_pretrained
 from models.xbert import BertConfig, BertLMHeadModel
-from transformers import AutoModelForMaskedLM, RobertaForCausalLM
-from models import XVLMBase, load_pretrained
 
 
 def tile(x, dim, n_tile):
@@ -30,17 +30,23 @@ class VQAModel(XVLMBase):
         self.eos_token_id = tokenizer.eos_token_id
         self.tokenizer = tokenizer
 
+        self.build_text_decoder(config, config_enc)
+
+        self.prompt = ""
+
+
+    def build_text_decoder(self,config, config_enc):
+        
         self.num_text_layers = config_enc.fusion_layer
         self.num_cross_layers = config_enc.num_hidden_layers - config_enc.fusion_layer
         assert config['num_dec_layers'] == self.num_cross_layers, "initialization not implemented"
+        self.cross_encoder_width = config_enc.encoder_width  # i.e. vision_width
+        self.dec_encoder_width = config_enc.hidden_size
 
-        config_dec = copy.deepcopy(config_enc)
+        config_dec = BertConfig.from_json_file(os.path.join(config['text_decoder'], 'config.json'))
         config_dec.encoder_width = config_enc.hidden_size
         config_dec.fusion_layer = 0  # start index
         config_dec.num_hidden_layers = config['num_dec_layers']
-        self.cross_encoder_width = config_enc.encoder_width  # i.e. vision_width
-        self.dec_encoder_width = config_enc.hidden_size
-        self.prompt = ""
 
         self.text_decoder =  BertLMHeadModel(config=config_dec)
         if self.dec_encoder_width != self.cross_encoder_width:
@@ -84,7 +90,7 @@ class VQAModel(XVLMBase):
 
                     decoder_key = encoder_key.replace('text_encoder', 'text_decoder')
                     state_dict[decoder_key] = copy.deepcopy(state_dict[key])
-                    # del state_dict[key]
+                    del state_dict[key]
 
         msg = self.load_state_dict(state_dict, strict=False)
         print('load checkpoint from %s' % ckpt_rpath)
@@ -101,25 +107,33 @@ class VQAModel(XVLMBase):
 
         image_embeds = self.vision_encoder(image)
         image_atts = torch.ones(image_embeds.size()[:-1], dtype=torch.long).to(image.device)
-        question_output = self.text_encoder(quesiton.input_ids,
-                                            attention_mask=quesiton.attention_mask,
-                                            encoder_hidden_states=image_embeds,
-                                            encoder_attention_mask=image_atts,
+
+        text_emb  = self.text_encoder.embeddings(quesiton.input_ids)
+        print(text_emb.shape, image_embeds.shape)
+        embeddings = torch.cat([text_emb, image_embeds], dim = 1)
+        embedding_atts = torch.cat([quesiton.attention_mask, image_atts], dim = 1)
+        print(embeddings.shape)
+        question_output = self.text_encoder(
+                                            attention_mask = embedding_atts,
+                                            inputs_embeds  = embeddings,
                                             output_attentions = True,
                                             return_dict=True)
-
         question_states = []
         question_atts = []
         for b in range(image.size(0)):
             question_states += [question_output.last_hidden_state[b]] * 1
-            question_atts += [quesiton.attention_mask[b]] * 1
+            question_atts += [embedding_atts[b]] * 1
         question_states = torch.stack(question_states, 0)
         question_atts = torch.stack(question_atts, 0)
+        print(image_atts.shape, quesiton.attention_mask.shape)
+        print(question_states.shape, question_atts.shape)
+        print(answer.input_ids.shape, answer.attention_mask.shape)
         if train:
             '''
             k: number of answers for each question
             weights: weight for each answer
             '''
+            print(question_states.shape)
             answer_targets = answer.input_ids.masked_fill(answer.input_ids == self.pad_token_id, -100)
             answer_output = self.text_decoder(answer.input_ids,
                                               attention_mask=answer.attention_mask,

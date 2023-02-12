@@ -6,7 +6,7 @@ from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 
     
-from dataset.pretrain_dataset_multilingual import ImageMultiTextDataset, RegionMultiTextDataset, ImageMonoTextDataset, ParaTextDataset
+from dataset.my_pretrain_dataset_multilingual import ImageMultiTextDataset, ImageMonoTextDataset
 
 from dataset.retrieval_dataset import re_train_dataset, re_eval_dataset
 from dataset.nlvr_dataset import nlvr_dataset
@@ -68,48 +68,35 @@ def create_dataset(dataset, config, tokenizer):
 
     if dataset == 'pretrain_multilingual':
         if len(config['train_file']):
-            general_dataset = ImageMultiTextDataset(config, config['train_file'], rank=int(os.environ.get('RANK') or 0),
-                                                    world_size=int(os.environ.get('WORLD_SIZE') or 1), shuffle=True,
+            general_dataset = ImageMultiTextDataset(config, config['train_file'], tokenizer, shuffle=True,
                                                     repeat=True, transform=pretrain_transform)
         else:
             general_dataset = None
 
-        if len(config['train_file_regions']):
-            region_dataset = RegionMultiTextDataset(config, config['train_file_regions'],
-                                                    rank=int(os.environ.get('RANK') or 0),
-                                                    world_size=int(os.environ.get('WORLD_SIZE') or 1), shuffle=True,
-                                                    repeat=True, transform=pretrain_transform, box_transform=box_transform)
-        else:
-            region_dataset = None
+        # if len(config['train_file_regions']):
+        #     region_dataset = RegionMultiTextDataset(config, config['train_file_regions'], tokenizer,
+        #                                             rank=int(os.environ.get('RANK') or 0),
+        #                                             world_size=int(os.environ.get('WORLD_SIZE') or 1), shuffle=True,
+        #                                             repeat=True, transform=pretrain_transform, box_transform=box_transform)
+        # else:
+        region_dataset = None
 
         if len(config['train_file_mono']):
             print("### not debugged yet")
-            mono_dataset = ImageMonoTextDataset(config, config['train_file_mono'], rank=int(os.environ.get('RANK') or 0),
+            mono_dataset = ImageMonoTextDataset(config, config['train_file_mono'], tokenizer, rank=int(os.environ.get('RANK') or 0),
                                                 world_size=int(os.environ.get('WORLD_SIZE') or 1), shuffle=True,
                                                 repeat=True, transform=pretrain_transform)
         else:
             mono_dataset = None
 
-        if len(config['train_file_text']):
-            text_dataset = ParaTextDataset(config, config['train_file_text'], rank=int(os.environ.get('RANK') or 0),
-                                           world_size=int(os.environ.get('WORLD_SIZE') or 1), shuffle=True, repeat=True)
-        else:
-            text_dataset = None
+        # if len(config['train_file_text']):
+        #     text_dataset = ParaTextDataset(config, config['train_file_text'], tokenizer, rank=int(os.environ.get('RANK') or 0),
+        #                                    world_size=int(os.environ.get('WORLD_SIZE') or 1), shuffle=True, repeat=True)
+        # else:
+        #     text_dataset = None
+        text_dataset = None
 
         return general_dataset, region_dataset, mono_dataset, text_dataset
-
-    elif dataset == 're':
-        train_dataset = re_train_dataset(config['train_file'], train_transform, config['image_root'])
-
-        val_dataset_dict = {}
-        for k, rpath in config['val_file'].items():
-            val_dataset_dict[k] = re_eval_dataset(rpath, test_transform, config['image_root'])
-
-        test_dataset_dict = {}
-        for k, rpath in config['test_file'].items():
-            test_dataset_dict[k] = re_eval_dataset(rpath, test_transform, config['image_root'])
-
-        return train_dataset, val_dataset_dict, test_dataset_dict
 
     elif dataset == 'gqa':
         train_dataset = vqa_dataset(config['train_file'], train_transform_wohflip, config['vqa_root'],
@@ -135,59 +122,6 @@ def create_dataset(dataset, config, tokenizer):
         test_dataset =  uit_vqa_dataset(config['test_file'], test_transform, config['test_root'],
                                     split='test', tokenizer = tokenizer)
         return train_dataset, valid_dataset, test_dataset 
-    elif dataset == 'nlvr_pretrain':
-        general_dataset = ImageMultiTextDataset(config, config['train_file'], rank=int(os.environ.get('RANK') or 0),
-                                                world_size=int(os.environ.get('WORLD_SIZE') or 1), shuffle=True,
-                                                repeat=True, transform=pretrain_transform)
-
-        return general_dataset
-
-    elif dataset == 'nlvr':
-        train_dataset = nlvr_dataset(config['train_file'], train_transform, config['image_root'])
-        val_dataset = nlvr_dataset(config['val_file'], test_transform, config['image_root'])
-
-        # test_dataset = nlvr_dataset(config['test_file'], test_transform, config['image_root'])
-
-        test_dataset_dict = {}  # marvl test
-        for k, rpath in config['test_file'].items():
-            if k == 'en':  # marvl does not have en test, so i use nlvr2 test set
-                test_dataset_dict[k] = nlvr_dataset(rpath, test_transform, image_root=config['image_root'])
-            else:
-                test_dataset_dict[k] = nlvr_dataset(rpath, test_transform, image_root=None)
-
-        return train_dataset, val_dataset, test_dataset_dict
-
-    elif dataset == 'xvnli':
-        train_dataset = xvnli_dataset(config['train_file'], train_transform, config['image_root'], config['max_tokens'])
-        val_dataset = xvnli_dataset(config['val_file'], test_transform, config['image_root'], config['max_tokens'])
-
-        test_dataset_dict = {}  # marvl test
-        for k, rpath in config['test_file'].items():
-            test_dataset_dict[k] = xvnli_dataset(rpath, test_transform, config['image_root'], config['max_tokens'])
-
-        return train_dataset, val_dataset, test_dataset_dict
-    
-    elif dataset == 'xflickrco':
-        train_dataset = xflickrco_train_dataset(config['train_file'], train_transform, config['image_root']['flickr30k'])
-
-        val_dataset = xflickrco_eval_dataset(config['val_file'], test_transform, config['image_root'])
-
-        test_dataset_dict = {}
-        for k, rpath in config['test_file'].items():
-            test_dataset_dict[k] = xflickrco_eval_dataset(rpath, test_transform, config['image_root'])
-
-        return train_dataset, val_dataset, test_dataset_dict
-
-    elif dataset == 'wit':
-        train_dataset = wit_train_dataset(config['train_file'], train_transform)
-
-        val_dataset = wit_eval_dataset(config['val_file'], test_transform)
-
-        test_dataset_dict = {}
-        for k, rpath in config['test_file'].items():
-            test_dataset_dict[k] = wit_eval_dataset(rpath, test_transform)
-
-        return train_dataset, val_dataset, test_dataset_dict
     
     else:
         raise NotImplementedError(f"dataset == {dataset}")

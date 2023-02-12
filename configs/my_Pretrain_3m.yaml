@@ -1,18 +1,16 @@
 ## Data
 
 # multilingual x multimodal
-train_file: [
-"hdfs://path/to/cc-3m-uc2"  # # a directory, which contains for example 64 files. Each file contains multiple lines, and each line is a json object(dict).
-               ]  # local files are also ok
+train_file: ['pre_train/UIT-ViIC/uitviic_captions_train2017.json']  # local files are also ok
 
 train_dataset_size: 2838361 # for IterableDataset
 images: {image_key: "binary",
          is_image_rpath: False, # read path or base64 encoding
          caption_key: "caption",
          tokenized: False,  # whether texts have been tokenized
-         batch_size: 128,  # 128 x 8 = 1024
+         batch_size: 8,  # 128 x 8 = 1024
          num_workers: 4,  # better -> the total number of training files % (world_size * num_workers) == 0
-         # language_chosen: ['en'],
+         language_chosen: ['en','vi','ja'],
          iter_perc: 1.0,
 }
 
@@ -36,7 +34,6 @@ images_mono: {image_key: "binary",
 
 
 train_file_text: [
-    "hdfs://path/to/wikimatrix",
 ]  # multilingual parallel texts
 texts_para: {source_key: "source_text",
          target_key: "target_text",
@@ -59,14 +56,15 @@ use_clip_vit: False
 
 
 use_swin: True
-vision_config: 'configs/config_swinB_224.json'
+vision_config: 'configs/my_config_swinB_224.json'
 image_res: 224
 patch_size: 32
 
 
 ## Text Encoder (& Cross Encoder)
-text_encoder: 'data/xlm-roberta-large'
-text_num_hidden_layers: 12  # use only 12 from 24 layers
+text_encoder: 'data/distilbert-base-25lang-cased'
+text_num_hidden_layers: 4
+use_roberta: False
 
 
 ## Training

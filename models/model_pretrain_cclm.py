@@ -1,5 +1,5 @@
 import torch
-from models import XVLMBase
+from models.my_xvlm import XVLMBase
 
 
 class CrossViewLM(XVLMBase):
@@ -37,38 +37,25 @@ class CrossViewLM(XVLMBase):
 
         loss_itc = self.get_contrastive_loss(image_feat, text_feat)
         loss_itm = self.get_matching_loss(image_embeds, image_atts, image_feat, text_embeds, text_atts, text_feat)
-        loss_mlm = self.get_mlm_loss(text_ids_masked, text_atts, image_embeds, image_atts, masked_pos, masked_ids)
+        loss_mlm = self.get_mlm_loss(text_ids_masked, text_atts, image_embeds, image_atts, text_ids)
 
         loss = {'loss_itc': loss_itc, 'loss_itm': loss_itm, 'loss_mlm': loss_mlm}
 
-        # if ret_bbox_loss:
-        #     output_coord = self.predict_bbox(image_embeds_fullatts, text_embeds, text_atts)
-        #     loss_bbox, loss_giou = self.get_bbox_loss(output_coord, target_bbox, is_image=is_image)
+        if text_ids_2 is not None:  # multilingual x multimodal
+            text_embeds_2 = self.get_text_embeds(text_ids_2, text_atts_2)
+            text_feat_2 = self.get_features(text_embeds=text_embeds_2)
 
-        #     loss['loss_bbox'] = loss_bbox
-        #     loss['loss_giou'] = loss_giou
+            loss_itc_2 = self.get_contrastive_loss(image_feat, text_feat_2)
+            loss_ttc = self.get_contrastive_loss(text_feat, text_feat_2)
 
-        # if text_ids_2 is not None:  # multilingual x multimodal
-        #     text_embeds_2 = self.get_text_embeds(text_ids_2, text_atts_2)
-        #     text_feat_2 = self.get_features(text_embeds=text_embeds_2)
+            loss['loss_itc'] = (loss['loss_itc'] + loss_itc_2) / 2
+            loss['loss_ttc'] = loss_ttc
 
-        #     loss_itc_2 = self.get_contrastive_loss(image_feat, text_feat_2)
-        #     loss_ttc = self.get_contrastive_loss(text_feat, text_feat_2)
-
-        #     loss['loss_itc'] = (loss['loss_itc'] + loss_itc_2) / 2
-        #     loss['loss_ttc'] = loss_ttc
-
-            # loss_itm_2 = self.get_matching_loss(image_embeds, image_atts, image_feat, text_embeds_2, text_atts_2, text_feat_2)
-            # loss['loss_itm'] = (loss['loss_itm'] + loss_itm_2) / 2
-            #
-            # loss_mlm_2 = self.get_mlm_loss(text_ids_masked_2, text_atts_2, image_embeds, image_atts, masked_pos_2, masked_ids_2)
-            # loss['loss_mlm'] = (loss['loss_mlm'] + loss_mlm_2) / 2
-            #
-            # if ret_bbox_loss:
-            #     output_coord_2 = self.predict_bbox(image_embeds_fullatts, text_embeds_2, text_atts_2)
-            #     loss_bbox_2, loss_giou_2 = self.get_bbox_loss(output_coord_2, target_bbox, is_image=is_image)
-            #     loss['loss_bbox'] = (loss['loss_bbox'] + loss_bbox_2) / 2
-            #     loss['loss_giou'] = (loss['loss_giou'] + loss_giou_2) / 2
+            loss_itm_2 = self.get_matching_loss(image_embeds, image_atts, image_feat, text_embeds_2, text_atts_2, text_feat_2)
+            loss['loss_itm'] = (loss['loss_itm'] + loss_itm_2) / 2
+            
+            loss_mlm_2 = self.get_mlm_loss(text_ids_masked_2, text_atts_2, image_embeds, image_atts, text_ids)
+            loss['loss_mlm'] = (loss['loss_mlm'] + loss_mlm_2) / 2
 
         return loss
 
@@ -94,10 +81,10 @@ class CrossViewLM(XVLMBase):
             loss_ttc = self.get_contrastive_loss(text_feat, text_feat_2)
             loss_ttm = self.get_matching_loss(text_embeds, text_atts, text_feat, text_embeds_2, text_atts_2, text_feat_2)
 
-            loss_mlm = self.get_mlm_loss(text_ids_masked, text_atts, text_embeds_2, text_atts_2, masked_pos, masked_ids)
+            # loss_mlm = self.get_mlm_loss(text_ids_masked, text_atts, text_embeds_2, text_atts_2, masked_pos, masked_ids)
             # loss_mlm_2 = self.get_mlm_loss(text_ids_masked_2, text_atts_2, text_embeds, text_atts, masked_pos_2, masked_ids_2)
 
-            loss = {'loss_ttc': loss_ttc, 'loss_ttm': loss_ttm, 'loss_mlm': loss_mlm}
+            loss = {'loss_ttc': loss_ttc, 'loss_ttm': loss_ttm}
 
         return loss
 
