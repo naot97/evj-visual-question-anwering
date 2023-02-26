@@ -52,7 +52,7 @@ from transformers.modeling_utils import (
     apply_chunking_to_forward,
     find_pruneable_heads_and_indices,
     prune_linear_layer,
-)
+    )
 from transformers.utils import logging
 from transformers.models.bert.configuration_bert import BertConfig
 
@@ -490,7 +490,7 @@ class BertLayer(nn.Module):
 
         outputs = self_attention_outputs[1:-1]
         present_key_value = self_attention_outputs[-1]
-
+        print(attention_output.shape, attention_mask.shape)
         if self.has_cross_attention and (encoder_hidden_states is not None):
             assert encoder_hidden_states is not None, "encoder_hidden_states must be given for cross-attention layers"
             
@@ -1043,10 +1043,6 @@ class BertModel(BertPreTrainedModel):
             encoder_extended_attention_mask = None
 
         # Prepare head mask if needed
-        # 1.0 in head_mask indicate we keep the head
-        # attention_probs has shape bsz x n_heads x N x N
-        # input head_mask has shape [num_heads] or [num_hidden_layers x num_heads]
-        # and head_mask is converted to shape [num_hidden_layers x batch x num_heads x seq_length x seq_length]
         head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
         
         if encoder_embeds is None:

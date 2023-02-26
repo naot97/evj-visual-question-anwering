@@ -14,7 +14,7 @@ from utils.wit_preproc import wit_preproc
 
 def run_pretrain(args):
     print("### Start pre-training", flush=True)
-    os.system(f"python3 my_Pretrain.py "
+    os.system(f"python3 Pretrain.py "
               f"--epoch {args.epoch} --config {args.config}")
 
 
@@ -25,10 +25,10 @@ def run_vqa(args, load_vqa_pretrain=False):
     #assert os.path.exists("images/gqa")
 
     print("### Training VQA", flush=True)
-    args.config = f"configs/{args.model}/GQA_fewshot.yaml" if args.fewshot else f"configs/{args.model}/my_GQA.yaml"
+    args.config = f"configs/{args.model}/GQA_fewshot.yaml" if args.fewshot else f"configs/{args.model}/GQA.yaml"
 
     os.system(
-              f"python3 my_VQA.py --config {args.config} {'--load_vqa_pretrain' if args.load_vqa_pretrain else ''}"
+              f"python3 VQA.py --config {args.config} {'--load_vqa_pretrain' if args.load_vqa_pretrain else ''}"
               f" --output_dir {args.output_dir} "
               f"--bs {args.bs} {'--evaluate' if args.evaluate else ''} "
               f"{'--checkpoint ' + args.checkpoint if args.evaluate or args.load_vqa_pretrain  else ''}"
@@ -38,7 +38,7 @@ def run_vqa(args, load_vqa_pretrain=False):
 
 def run(args):
     if args.task == 'pretrain_cclm_3m':
-        args.config = 'configs/my_Pretrain_3m.yaml'
+        args.config = 'configs/Pretrain_3m.yaml'
         run_pretrain(args)
 
     elif args.task == 'pretrain_cclm_4m':

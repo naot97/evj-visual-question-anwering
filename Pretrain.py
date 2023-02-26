@@ -333,7 +333,7 @@ def train(model, general_loader, region_loader, mono_loader, text_loader, optimi
     
 
 def main(args, config):
-    device = torch.device(args.device)
+    device = torch.device('cpu')
 
     config['train_file'] = ','.join(config['train_file'])
     config['train_file_regions'] = ','.join(config['train_file_regions'])
@@ -352,7 +352,7 @@ def main(args, config):
     np.random.seed(seed)
     random.seed(seed)
     cudnn.benchmark = True
-
+    ''' 
     print("Creating dataset", flush=True)
     general_dataset, region_dataset, mono_dataset, text_dataset = \
         create_dataset('pretrain_multilingual', config)
@@ -396,7 +396,7 @@ def main(args, config):
                                                   collate_fn=text_dataset.collate_fn)
     else:
         text_loader = None
-
+    '''
     print("Creating model", flush=True)
     model = CrossViewLM(config=config)
     # print(model)
@@ -455,9 +455,8 @@ if __name__ == '__main__':
 
     config = yaml.load(open(args.config, 'r'), Loader=yaml.Loader)
 
-    hmkdir(args.output_dir)
 
-    yaml.dump(config, open('config.yaml', 'w'))
-    hcopy('config.yaml', args.output_dir)
+    #yaml.dump(config, open('config.yaml', 'w'))
+    #hcopy('config.yaml', args.output_dir)
 
     main(args, config)

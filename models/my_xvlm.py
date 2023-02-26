@@ -205,6 +205,9 @@ def build_text_encoder(config, vision_width, load_text_params=False, use_mlm_los
         config_text = DistilBertConfig.from_json_file(os.path.join(config['text_encoder'], 'config.json'))
         config_text.num_hidden_layers = config['text_num_hidden_layers'] if 'text_num_hidden_layers' in config else 12
         config_text.fusion_layer = config_text.num_hidden_layers // 2
+        config_text.attention_probs_dropout_prob = 0.1
+        config_text.layer_norm_eps = 1e-12
+        config_text.hidden_dropout_prob = 0.1
 
     else:
         assert isinstance(config_text, BertConfig)
@@ -378,41 +381,23 @@ class XVLMBase(nn.Module):
 
         encoder = self.text_encoder.distilbert if hasattr(self.text_encoder, 'distilbert') else self.text_encoder
 
-        # if text_embeds is not None:
-        #     return encoder(encoder_embeds=text_embeds,
-        #                    attention_mask=text_atts,
-        #                    encoder_hidden_states=image_embeds,
-        #                    encoder_attention_mask=image_atts,
-        #                    return_dict=True,
-        #                    mode='fusion',
-        #                    ).last_hidden_state
-        # elif text_ids is not None:
-        #     return encoder(text_ids,
-        #                    attention_mask=text_atts,
-        #                    encoder_hidden_states=image_embeds,
-        #                    encoder_attention_mask=image_atts,
-        #                    return_dict=True,
-        #                    ).last_hidden_state
-
         if text_embeds is not None:
-
-            embeddings = torch.cat([text_embeds, image_embeds], dim = 1)
-            embedding_atts = torch.cat([text_atts, image_atts], dim = 1)
             return encoder(
-                    attention_mask = embedding_atts,
-                    inputs_embeds  = embeddings,
-                    # output_attentions = True,
-                    return_dict=True,
-                    mode='fusion').last_hidden_state
+                           inputs_embeds=text_embeds,
+                           attention_mask=text_atts,
+                           encoder_hidden_states=image_embeds,
+                           encoder_attention_mask=image_atts,
+                           return_dict=True,
+                           mode='fusion',
+                           ).last_hidden_state
         elif text_ids is not None:
-            text_embeds  = encoder.embeddings(text_ids)
-            embeddings = torch.cat([text_embeds, image_embeds], dim = 1)
-            embedding_atts = torch.cat([text_atts, image_atts], dim = 1)
-            return encoder(
-                    attention_mask = embedding_atts,
-                    inputs_embeds  = embeddings,
-                    # output_attentions = True,
-                    return_dict=True).last_hidden_state
+            return encoder(text_ids,
+                           attention_mask=text_atts,
+                           encoder_hidden_states=image_embeds,
+                           encoder_attention_mask=image_atts,
+                           return_dict=True,
+                           ).last_hidden_state
+
         else:
             raise ValueError
 
@@ -520,58 +505,11 @@ class XVLMBase(nn.Module):
         return F.cross_entropy(output, itm_labels)
 
     def get_mlm_loss(self, text_ids_masked, text_atts, image_embeds, image_atts, text_ids):
-        # text_embeds  = self.text_encoder.distilbert.embeddings(text_ids_masked)
-        # embeddings = torch.cat([text_embeds, image_embeds], dim = 1)
-        # embedding_atts = torch.cat([text_atts, image_atts], dim = 1)
-        # print(text_embeds.shape, image_embeds.shape)
         return self.text_encoder(
                 input_ids = text_ids_masked,
                 attention_mask = text_atts,
                 return_dict=True,
-                image_embeds=image_embeds,
-                image_atts=image_atts,
+                encoder_hidden_states=image_embeds,
+                encoder_attention_mask=image_atts,
                 labels=text_ids,
                 ).loss
-
-    # def predict_bbox(self, image_embeds, text_embeds, text_atts):
-    #     """
-    #     Args:
-    #         image_embeds: encoding full images
-
-    #     Returns:
-    #         output_coord: bsz, 4
-    #     """
-    #     assert image_embeds.size(0) == text_embeds.size(0)
-
-    #     output_cls = self.get_cross_embeds(image_embeds, torch.ones(image_embeds.shape[:2]).to(image_embeds.device),
-    #                                        text_embeds=text_embeds, text_atts=text_atts)[:, 0, :]
-    #     output_coord = self.bbox_head(output_cls).sigmoid()
-
-    #     return output_coord
-
-    # def get_bbox_loss(self, output_coord, target_bbox, is_image=None):
-    #     """
-    #     Bounding Box Loss: L1 & GIoU
-
-    #     Args:
-    #         image_embeds: encoding full images
-    #     """
-    #     loss_bbox = F.l1_loss(output_coord, target_bbox, reduction='none')  # bsz, 4
-
-    #     boxes1 = box_ops.box_cxcywh_to_xyxy(output_coord)
-    #     boxes2 = box_ops.box_cxcywh_to_xyxy(target_bbox)
-    #     if (boxes1[:, 2:] < boxes1[:, :2]).any() or (boxes2[:, 2:] < boxes2[:, :2]).any():
-    #         # early check of degenerated boxes
-    #         print("### (boxes1[:, 2:] < boxes1[:, :2]).any() or (boxes2[:, 2:] < boxes2[:, :2]).any()")
-    #         loss_giou = torch.zeros(output_coord.size(0), device=output_coord.device)
-    #     else:
-    #         loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(boxes1, boxes2))  # bsz
-
-    #     if is_image is None:
-    #         num_boxes = target_bbox.size(0)
-    #     else:
-    #         num_boxes = torch.sum(1 - is_image)
-    #         loss_bbox = loss_bbox * (1 - is_image.view(-1, 1))
-    #         loss_giou = loss_giou * (1 - is_image)
-
-    #     return loss_bbox.sum() / num_boxes, loss_giou.sum() / num_boxes

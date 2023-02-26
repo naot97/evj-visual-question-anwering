@@ -8,7 +8,7 @@ images: {image_key: "binary",
          is_image_rpath: False, # read path or base64 encoding
          caption_key: "caption",
          tokenized: False,  # whether texts have been tokenized
-         batch_size: 8,  # 128 x 8 = 1024
+         batch_size: 2,  # 128 x 8 = 1024
          num_workers: 4,  # better -> the total number of training files % (world_size * num_workers) == 0
          language_chosen: ['en','vi','ja'],
          iter_perc: 1.0,

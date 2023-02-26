@@ -6,7 +6,7 @@ ckpt_frequent_step: 50000
 embed_dim: 256
 image_res: 224
 images:
-  batch_size: 8
+  batch_size: 2
   caption_key: caption
   image_key: binary
   is_image_rpath: false
