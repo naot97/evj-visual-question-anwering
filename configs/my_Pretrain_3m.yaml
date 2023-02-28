@@ -63,7 +63,7 @@ patch_size: 32
 
 ## Text Encoder (& Cross Encoder)
 text_encoder: 'data/distilbert-base-25lang-cased'
-text_num_hidden_layers: 4
+text_num_hidden_layers: 6
 use_roberta: False
 
 
@@ -82,8 +82,8 @@ mask_whole_word: False  # not implemented
 skipgram_prb: 0.2
 skipgram_size: 3
 
-use_tlm: False # if true, multitask multilingual tasks
-sample_2_captions: False
+use_tlm: True # if true, multitask multilingual tasks
+sample_2_captions: True
 use_one_cl_proj_only: False
 
 

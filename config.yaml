@@ -27,13 +27,13 @@ patch_size: 32
 regions: {batch_size: 128, caption_key: caption, careful_hflip: true, code_switch: false,
   image_key: binary, is_image_rpath: false, iter_perc: -1, max_images: 48, max_regions: 5,
   min_perc_in_image: 0.5, num_workers: 2, tokenized: false}
-sample_2_captions: false
+sample_2_captions: true
 schedular: {epochs: 30, lr: 0.0001, num_warmup_steps: 2500, sched: linear}
 skipgram_prb: 0.2
 skipgram_size: 3
 temp: 0.07
 text_encoder: data/distilbert-base-25lang-cased
-text_num_hidden_layers: 4
+text_num_hidden_layers: 6
 texts_para: {batch_size: 128, iter_perc: 1.0, mask_prob: 0.4, max_masks: 20, max_tokens: 64,
   max_words: 64, num_workers: 4, source_key: source_text, target_key: target_text,
   tokenized: false}
@@ -46,5 +46,5 @@ use_clip_vit: false
 use_one_cl_proj_only: false
 use_roberta: false
 use_swin: true
-use_tlm: false
+use_tlm: true
 vision_config: configs/my_config_swinB_224.json
