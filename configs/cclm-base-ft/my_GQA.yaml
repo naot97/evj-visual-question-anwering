@@ -1,0 +1,39 @@
+train_file: ['uit/evjvqa_train.json']
+valid_file: ['uit/evjvqa_train.json']
+test_file : ['uit/official_evjvqa_public_test.json']
+
+answer_list: ''
+vqa_root: 'images/vqa-uit/train-images'
+test_root: 'images/vqa-uit/public-test-images'
+
+## Vision Encoder
+vision_config: 'configs/my_config_swinB_224.json'
+
+use_clip_vit: False
+# image_res: 384
+# patch_size: 16
+
+use_swin: True
+image_res: 224
+patch_size: 32
+
+## Text Encoder (& Cross Encoder)
+text_encoder: 'data/distilbert-base-25lang-cased'
+text_num_hidden_layers: 4
+use_roberta: False
+
+## Training
+text_decoder: 'data/bert-base-25lang-cased'
+num_dec_layers: 2
+batch_size_train: 8
+batch_size_test: 8
+max_tokens: 40
+k_test: 8
+
+
+## Other Settings
+optimizer: {opt: adamW, lr: 3e-5, weight_decay: 0.01, lr_mult: 2}
+schedular: {sched: linear, lr: 3e-5, epochs: 30, num_warmup_steps: 0.1}
+start_eval: 0  # epoch index
+
+

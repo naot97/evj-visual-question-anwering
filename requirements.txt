@@ -1,0 +1,9 @@
+timm==0.4.9
+transformers==4.12.5
+ruamel_yaml
+scikit-image
+matplotlib
+pycocotools
+pycocoevalcap
+datasets
+sentencepiece

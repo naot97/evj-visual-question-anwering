@@ -1,0 +1,13 @@
+pip install torch==1.12.0+cu116 torchvision==0.13.0+cu116 torchaudio==0.12.0 --extra-index-url https://download.pytorch.org/whl/cu116
+pip install torch==1.12.0 torchvision==0.13.0 torchaudio==0.12.0
+
+python3 run.py --checkpoint data/cclm_3m_epoch_29.th  --load_vqa_pretrain --task gqa --output_dir output/vqa --bs 4
+python3 run.py --checkpoint output/vqa2/model_state_epoch_29.th --evaluate --task gqa --output_dir output/test --bs 4 --seed 42
+
+python3 run.py --checkpoint output/vqa/model_state_epoch_29.th --evaluate --task gqa --output_dir output/test --bs 4 --seed 42
+
+python3 run.py --task gqa --output_dir output/test --bs 1 --seed 42
+
+
+python3 run.py --task pretrain_cclm_3m --output_dir output/pretrain 
+
